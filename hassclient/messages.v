@@ -1,7 +1,7 @@
 module hassclient
 
 import json
-// import time
+import time
 
 pub struct HassMessage {
 	pub:
@@ -12,20 +12,19 @@ pub struct HassMessage {
 	// result			string [raw]
 }
 
-
 // pub struct HassAttribute
 
 pub struct HassState {
-	last_changed_str	string
-	last_updated_str	string
+	last_changed_str	string [json:'last_changed']
+	last_updated_str	string [json:'last_updated']
 
 	pub:
 	entity_id 			string
 	state				string
 	// attributes			map[string]string
-	// pub mut:
-	// last_updated		time.Time
-	// last_changed		time.Time
+	pub mut:
+	last_updated		time.Time
+	last_changed		time.Time
 }
 
 pub struct HassEventData {
@@ -91,10 +90,22 @@ fn parse_hass_event_message(jsn string) ?EventMessage {
 fn parse_hass_changed_event_message(jsn string) ?StateChangedEventMessage {
 	mut msg:= json.decode(StateChangedEventMessage, jsn) or {return error(err)}
 
-	// mut t := time.parse(msg.event.data.new_state.last_updated_str) or
-	// 										{ return error(err)}
+	new_last_updated := time.parse_rfc8601(msg.event.data.new_state.last_updated_str) or
+											{ return error(err)}
+	msg.event.data.new_state.last_updated = new_last_updated
 
-	// msg.event.data.new_state.last_updated = t
+	 new_last_changed := time.parse_rfc8601(msg.event.data.new_state.last_changed_str) or
+											{ return error(err)}
+	msg.event.data.new_state.last_changed = new_last_changed
+
+	old_last_updated := time.parse_rfc8601(msg.event.data.old_state.last_updated_str) or
+											{ return error(err)}
+	msg.event.data.old_state.last_updated = old_last_updated
+
+	 old_last_changed := time.parse_rfc8601(msg.event.data.old_state.last_changed_str) or
+											{ return error(err)}
+	msg.event.data.old_state.last_changed = old_last_changed
+
 	return msg
 }
 

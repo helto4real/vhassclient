@@ -3,6 +3,20 @@ import net.websocket
 import eventbus
 import time
 import log
+import os
+
+interface WsClientFactory {
+	new_websocket_client() &WsClient
+}
+
+pub interface WsClient {
+	write(payload byteptr, payload_len int, code websocket.OPCode) int
+	listen()
+	read() int
+	connect() int
+	close(code int, message string)
+
+}
 
 pub struct HassConnection {
 	hass_uri		string
@@ -24,19 +38,25 @@ pub struct ConnectionConfig {
 
 // Instance new connection to Home Assistant
 pub fn new_connection(cc ConnectionConfig) &HassConnection {
+
+	token := if cc.token != '' { cc.token } else { os.getenv('HASS_TOKEN') }
+	
 	mut c := &HassConnection {
 		hass_uri: cc.hass_uri,
-		token: cc.token,
+		token: token,
 		state_events: eventbus.new()
 		ws: websocket.new(cc.hass_uri)
 		logger: &log.Log{}
 	}
-	c.logger.set_level(cc.log_level)
 	c.ws.nonce_size = 16 // For python back-ends
+
 	c.ws.subscriber.subscribe_method('on_open', on_open, c)
 	c.ws.subscriber.subscribe_method('on_message', on_message, c)
 	c.ws.subscriber.subscribe_method('on_error', on_error, c)
 	c.ws.subscriber.subscribe_method('on_close', on_close, c)
+
+
+	c.logger.set_level(cc.log_level)
 
 	c.logger.debug('Initialized HassConnection')
 
