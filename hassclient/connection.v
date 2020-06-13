@@ -5,19 +5,6 @@ import time
 import log
 import os
 
-interface WsClientFactory {
-	new_websocket_client() &WsClient
-}
-
-pub interface WsClient {
-	write(payload byteptr, payload_len int, code websocket.OPCode) int
-	listen()
-	read() int
-	connect() int
-	close(code int, message string)
-
-}
-
 pub struct HassConnection {
 	hass_uri		string
 	pub:
@@ -25,7 +12,7 @@ pub struct HassConnection {
 	mut:
 	state_events	&eventbus.EventBus
 	ws 				&websocket.Client
-	sequence 		int = 0
+	sequence 		int = 1
 	logger  		&log.Log
 
 }
@@ -40,7 +27,7 @@ pub struct ConnectionConfig {
 pub fn new_connection(cc ConnectionConfig) &HassConnection {
 
 	token := if cc.token != '' { cc.token } else { os.getenv('HASS_TOKEN') }
-	
+
 	mut c := &HassConnection {
 		hass_uri: cc.hass_uri,
 		token: token,
@@ -137,7 +124,7 @@ fn on_message(mut c HassConnection, ws websocket.Client, msg &websocket.Message)
 			}
 		}
 		else {
-			c.logger.error('unhandled opcode')
+			c.logger.error('unhandled opcode: $msg.opcode')
 		}
 	}
 }

@@ -90,19 +90,19 @@ fn parse_hass_event_message(jsn string) ?EventMessage {
 fn parse_hass_changed_event_message(jsn string) ?StateChangedEventMessage {
 	mut msg:= json.decode(StateChangedEventMessage, jsn) or {return error(err)}
 
-	new_last_updated := time.parse_rfc8601(msg.event.data.new_state.last_updated_str) or
+	new_last_updated := time.parse_iso8601(msg.event.data.new_state.last_updated_str) or
 											{ return error(err)}
 	msg.event.data.new_state.last_updated = new_last_updated
 
-	 new_last_changed := time.parse_rfc8601(msg.event.data.new_state.last_changed_str) or
+	new_last_changed := time.parse_iso8601(msg.event.data.new_state.last_changed_str) or
 											{ return error(err)}
 	msg.event.data.new_state.last_changed = new_last_changed
 
-	old_last_updated := time.parse_rfc8601(msg.event.data.old_state.last_updated_str) or
+	old_last_updated := time.parse_iso8601(msg.event.data.old_state.last_updated_str) or
 											{ return error(err)}
 	msg.event.data.old_state.last_updated = old_last_updated
 
-	 old_last_changed := time.parse_rfc8601(msg.event.data.old_state.last_changed_str) or
+	 old_last_changed := time.parse_iso8601(msg.event.data.old_state.last_changed_str) or
 											{ return error(err)}
 	msg.event.data.old_state.last_changed = old_last_changed
 

@@ -12,6 +12,7 @@ fn main() {
 			log_level: log.Level.debug
 		}
 	)
+	println('CONNECTING!')
 	c.subscribe_change_events(on_state_changed)
 	c.connect()
 
