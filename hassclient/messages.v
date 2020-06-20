@@ -14,6 +14,8 @@ pub struct HassMessage {
 
 // pub struct HassAttribute
 
+
+
 pub struct HassState {
 	last_changed_str	string [json:'last_changed']
 	last_updated_str	string [json:'last_updated']
@@ -21,7 +23,7 @@ pub struct HassState {
 	pub:
 	entity_id 			string
 	state				string
-	// attributes			map[string]string
+	// attributes			[]map[string]string
 	pub mut:
 	last_updated		time.Time
 	last_changed		time.Time

@@ -1,19 +1,19 @@
 module hassclient
 import net.websocket
-import eventbus
 import time
 import log
 import os
+import channel
 
 pub struct HassConnection {
-	hass_uri		string
+	hass_uri	string
 	pub:
-	token			string
+	token		string
 	mut:
-	state_events	&eventbus.EventBus
-	ws 				&websocket.Client
-	sequence 		int = 1
-	logger  		&log.Log
+	state_chan	&channel.Channel
+	ws 			&websocket.Client
+	sequence	int = 1
+	logger  	&log.Log
 
 }
 
@@ -27,12 +27,13 @@ pub struct ConnectionConfig {
 pub fn new_connection(cc ConnectionConfig) &HassConnection {
 
 	token := if cc.token != '' { cc.token } else { os.getenv('HASS_TOKEN') }
+	state_chan := channel.new_buffered_channel(100) or {panic(err)}
 
 	mut c := &HassConnection {
 		hass_uri: cc.hass_uri,
 		token: token,
-		state_events: eventbus.new()
 		ws: websocket.new(cc.hass_uri)
+		state_chan: state_chan
 		logger: &log.Log{}
 	}
 	c.ws.nonce_size = 16 // For python back-ends
@@ -42,17 +43,15 @@ pub fn new_connection(cc ConnectionConfig) &HassConnection {
 	c.ws.subscriber.subscribe_method('on_error', on_error, c)
 	c.ws.subscriber.subscribe_method('on_close', on_close, c)
 
-
 	c.logger.set_level(cc.log_level)
-
 	c.logger.debug('Initialized HassConnection')
 
 	return c
 }
 
-// Subscribes to state change events
-pub fn (mut c HassConnection) subscribe_change_events(handler eventbus.EventHandlerFn) {
-	c.state_events.subscriber.subscribe_method('on_changed_state', handler, c)
+pub fn (mut c HassConnection) state_change() ?&HassEventData {
+	s := c.state_chan.read() or {return error(err)}
+	return &HassEventData(s)
 }
 
 // Connects to Home Assistant
@@ -114,7 +113,7 @@ fn on_message(mut c HassConnection, ws websocket.Client, msg &websocket.Message)
 								StateChangedEventMessage {}
 							}
 							event_data := state_changed_event_msg.event.data
-							c.state_events.publish('on_changed_state', &ws, &event_data)
+							c.state_chan.write(&event_data)
 
 						}
 						else {}

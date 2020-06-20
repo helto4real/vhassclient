@@ -1,7 +1,6 @@
 module main
 
 import hassclient as hc
-import net.websocket
 import log
 
 fn main() {
@@ -13,11 +12,10 @@ fn main() {
 		}
 	)
 	println('CONNECTING!')
-	c.subscribe_change_events(on_state_changed)
-	c.connect()
+	go c.connect()
 
-}
-
-fn on_state_changed(c &hc.HassConnection, ws websocket.Client, state &hc.HassEventData) {
-	println('$state.entity_id : $state.new_state.state ($state.old_state.state), $state.new_state.last_updated; $state.new_state.last_updated.microsecond')
+	for {
+		state := c.state_change() or {panic(err)}
+		println('$state.entity_id : $state.new_state.state ($state.old_state.state), $state.new_state.last_updated; $state.new_state.last_updated.microsecond')
+	}
 }
